@@ -220,13 +220,12 @@ class ElectronicMusicEngine {
     });
     this.leadDistortion = new Tone.Distortion(0.15);
     // New effects for expressive control
-    this.leadBitcrusher = new Tone.BitDepth(24); // clean by default
+    this.leadBitcrusher = new Tone.BitCrusher(4, 4); // bits, normalfrequency
     this.leadWaveshaper = new Tone.WaveShaper();
     // Set a subtle curve for warmth (almost linear)
     this.leadWaveshaper.curve = new Float32Array([-0.99, -0.5, 0, 0.5, 0.99]);
     this.leadWaveshaper.oversample = '4x';
-    this.leadFlanger = new Tone.Flanger();
-    this.leadFlanger.depth.value = 0; // no effect by default
+    this.leadFlanger = null; // Flanger not available in this Tone.js version
     this.leadPhaser = new Tone.Phaser();
     this.leadPhaser.frequency.value = 0; // no modulation by default
     this.leadTremolo = new Tone.Tremolo();
@@ -235,12 +234,11 @@ class ElectronicMusicEngine {
     this.leadDelay = new Tone.FeedbackDelay("8n", 0.35);
     this.leadReverb = new Tone.Reverb({ decay: 2.5, wet: 0.25, preDelay: 0.01 });
     this.leadPanner = new Tone.Panner(0);
-    // Chain: distortion -> bitcrusher -> waveshaper -> flanger -> phaser -> tremolo -> filter -> delay -> reverb -> panner -> master
+    // Chain: distortion -> bitcrusher -> waveshaper -> phaser -> tremolo -> filter -> delay -> reverb -> panner -> master
     this.leadSynth.chain(
       this.leadDistortion,
       this.leadBitcrusher,
       this.leadWaveshaper,
-      this.leadFlanger,
       this.leadPhaser,
       this.leadTremolo,
       this.leadFilter,
@@ -318,15 +316,7 @@ class ElectronicMusicEngine {
     this.bitcrusher.wet.value = 0; // start dry
 
     // Flanger for modulation effects
-    this.flanger = new Tone.FeedbackEffect({
-      effect: new Tone.Flanger({
-        delayDelay: 0.5,
-        depth: 0.5,
-        feedback: 0.2,
-        rate: 0.5
-      }),
-      feedback: 0.2
-    });
+    this.flanger = new Tone.FeedbackDelay("8n", 0.2); // Using FeedbackDelay as Flanger substitute
     this.flanger.wet.value = 0; // start dry
 
     // Envelope follower for auto-wah effects
@@ -571,10 +561,9 @@ class ElectronicMusicEngine {
   }
 
   updateFlanger(amount) {
-    // Map 0-100 to flanger depth (0-1)
-    const depth = amount / 100;
-    this.leadFlanger.depth.value = depth;
-    this.flanger.effect.depth = depth;
+    // Map 0-100 to feedback delay parameters
+    const feedback = amount / 100; // 0 to 1
+    this.flanger.feedback.value = feedback;
   }
 
   updateAutoFilter(amount) {
