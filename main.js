@@ -2055,7 +2055,7 @@ async function main() {
           engine.updateFlanger(rawFingerSpread);    // Finger spread -> flanger depth
           engine.updateAutoFilter(rawWristRotation); // Wrist rotation -> auto filter amount
 
-          if (currentChord && qualityIndex >= 1) {
+          if (currentChord) {
             const tones = getChordTones(currentChord, isMajorMode);
             let notes = getSolidNotes(tones, qualityIndex, isMajorMode);
             if (thumbDown) notes = notes.map(f => f / 2);
@@ -2082,6 +2082,16 @@ async function main() {
                 thumbDown
               });
             }
+          } else if (cachedRightLandmarks) {
+            // Fallback: play root note if no chord detected but right hand is present
+            const rootNote = Tone.Frequency(currentTonicFreq).toNote();
+            const notes = [rootNote];
+            if (!isArpOn) {
+              engine.playLeadNotes(notes, currentVolume * 0.5); // quieter fallback
+            }
+            engine.playPadNotes(notes, currentVolume * 0.3);
+            engine.playBassNote(rootNote, currentVolume * 0.5);
+            engine.setArpNotes(notes);
           } else {
             engine.stopLead();
             engine.stopBass();
