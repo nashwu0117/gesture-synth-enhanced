@@ -12,14 +12,13 @@ A camera-based electronic music synthesizer with hand gesture control - EDM Edit
 - Visual feedback with webcam overlay, spectrum visualization, volume meter, and chord display
 - Responsive design for desktop and mobile browsers
 
-## �� 🎹 手勢到音調映射 (Gesture to Note Mapping)
+## �� 🎹 �� 👆 手勢�辨�識規則（左手控制和�弦）
 
-### �� 👆 手勢�辨�識規則（左手控制和�弦）
 - **伸直**：指�尖 y � 座標 < 第二關節 y � 座標
 - **�彎曲**：指�尖 y � 座標 > 第二關節 y � 座標
 - **�拇指**：特別判�斷（左右手相反）
 
-### �� 🎵 和�弦對應表
+## �� 🎵 和�弦對應表
 
 | 手勢組合 | 英文說明 | 中文說明 | 和�弦類型 | 音階位置 |
 |----------|----------|----------|----------|----------|
@@ -35,11 +34,13 @@ A camera-based electronic music synthesizer with hand gesture control - EDM Edit
 | �� 👍 + �� 👆 + �� 👉 + �� 👌 | Thumb + Index + Middle + Ring | 四指伸 (不含小指) | � 基�礎三和�弦 | IV / iv |
 | �� 👍 + �� 👆 + �� 👉 + �� 👌 + �� 👏 | 除了小指外全伸 | 四指伸 (含大�拇指) | � 基�礎三和�弦 | V / v |
 
-### �� 🎼 � 調性決定（左手�腕位置）
+## �� 🎼 � 調性決定（左手�腕位置）
+
 - **大調**：手�腕 x � 座標 < 中指根節 x � 座標 (手�腕在左�側)
 - **小調**：手�腕 x � 座標 > 中指根節 x � 座標 (手�腕在右�側)
 
-### �� 🎹 右手控制（音色/表達）
+## �� 🎹 右手控制（音色/表達）
+
 | 伸直手指數量 | � 功能 | � 說明 |
 |--------------|------|------|
 | 0 � 個 | 無音 | 右手完全�握�拳 |
@@ -48,13 +49,15 @@ A camera-based electronic music synthesizer with hand gesture control - EDM Edit
 | 3 � 個 | 完整三和�弦 | 根音 + 三度 + 五度 |
 | 4 � 個 | 完整和�弦 + 音階音 | 和�弦音 + 八度音 |
 
-### �� 🎚��️ 其他控制手勢
-- **手�掌開合度**：控制�濾波器截止�頻率（�掌心向外開大 = 截止�頻率升高）
+## �� 🎚 其他控制手勢
+
+- **手�掌開合度**：控制�濾波器截止�頻率（手�掌心向外開大 = 截止�頻率升高）
 - **手指展開度**：控制效果混合程度（手指張開越大 = � 效果越重）
 - **手�腕旋�轉**：控制LFO速率/幅度（�順時�鐘旋�轉 = 速率增加）
 - **手�腕高度**：控制音量（手�腕越高 = 音量越大）
 
-### �� 🎵 音階對應表（C大調為例）
+## �� 🎵 音階對應表（C大調為例）
+
 | 音階度數 | 英文名稱 | 中文名稱 | � 頻率 (Hz) |
 |----------|----------|----------|-----------|
 | I | C | 多 | 261.63 |
@@ -88,9 +91,7 @@ To run the project locally:
    ```
 
 3. Start the development server:
-   
-   npm run dev
-   ```
+   ```bash
    npm run dev
    ```
 
@@ -99,11 +100,9 @@ To run the project locally:
 ## Building for Production
 
 To create a production build:
-
 ```bash
 npm run build
 ```
-
 The built files will be in the `dist/` directory.
 
 To preview the production build locally:

@@ -1720,6 +1720,7 @@ let centerHUDPosition = { x: null, y: 72 };
 let hasCenterHUDMoved = false;
 let dragState = { active: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 };
 let panelDragState = { active: false, startY: 0, startHeight: 0, moved: false };
+const PANEL_MIN_HEIGHT = 44;
 let lastDetectionTimestamp = 0;
 const DETECTION_INTERVAL_MS = 200;
 
@@ -1825,7 +1826,16 @@ function movePanelDrag(event) {
 
 function endPanelDrag(event) {
   if (!panelDragState.active || !bottomPanel) return;
+  // 只有真正拖曳過才計算最終狀態；純點擊（沒移動）交給 click 事件 toggle
+  const wasMoved = panelDragState.moved;
   panelDragState.active = false;
+
+  if (event?.pointerId && panelHandle.releasePointerCapture) {
+    panelHandle.releasePointerCapture(event.pointerId);
+  }
+
+  if (!wasMoved) return;
+
   // Calculate final state based on where drag ended
   const clientY = event.clientY !== undefined ? event.clientY : event.touches?.[0]?.clientY;
   let isNowCollapsed = false;
@@ -1833,12 +1843,12 @@ function endPanelDrag(event) {
   if (typeof clientY === "number") {
     const deltaY = clientY - panelDragState.startY;
     const maxHeight = Math.max(360, window.innerHeight - 80);
-    const targetHeight = clamp(panelDragState.startHeight - deltaY, 40, maxHeight);
-    isNowCollapsed = targetHeight <= 40;
+    const targetHeight = clamp(panelDragState.startHeight - deltaY, PANEL_MIN_HEIGHT, maxHeight);
+    isNowCollapsed = targetHeight <= PANEL_MIN_HEIGHT;
   } else {
     // Fallback to measuring if we can't get clientY
     const height = bottomPanel.getBoundingClientRect().height;
-    isNowCollapsed = height <= 40;
+    isNowCollapsed = height <= PANEL_MIN_HEIGHT;
   }
 
   // Update state for future reference
@@ -1847,10 +1857,6 @@ function endPanelDrag(event) {
   // Apply transition and update UI
   bottomPanel.style.transition = "max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s ease";
   applyPanelCollapseState();
-
-  if (event?.pointerId && panelHandle.releasePointerCapture) {
-    panelHandle.releasePointerCapture(event.pointerId);
-  }
 }
 
 function handlePanelClick() {
