@@ -197,7 +197,22 @@ class ElectronicMusicEngine {
 
   async init() {
     await Tone.start();
+    console.log('Tone.js initialized, audio context state:', Tone.context.state);
+    // Ensure audio context is not suspended
+    if (Tone.context.state === 'suspended') {
+      await Tone.context.resume();
+      console.log('Audio context resumed');
+    }
     Tone.Transport.bpm.value = 128;
+    // Test tone to verify audio works
+    try {
+      const test = new Tone.Synth().toDestination();
+      test.triggerAttackRelease('C4', '0.1');
+      test.dispose();
+      console.log('Test tone played');
+    } catch (e) {
+      console.error('Test tone failed:', e);
+    }
 
     // ── Master Chain ──
     this.masterCompressor = new Tone.Compressor(-24, 4);
