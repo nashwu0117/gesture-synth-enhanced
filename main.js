@@ -204,7 +204,27 @@ class ElectronicMusicEngine {
     this.masterLimiter = new Tone.Limiter(-1);
     this.masterBus = new Tone.Gain(0.85);
 
-    this.masterBus.chain(this.masterCompressor, this.masterLimiter, Tone.Destination);
+    // Master effects
+    this.masterFilter = new Tone.Filter(2000, "lowpass");
+    this.masterFilter.Q.value = 1;
+
+    // Bitcrusher for lo-fi distortion
+    this.bitcrusher = new Tone.BitCrusher(4, 4); // bits, normfreq
+    this.bitcrusher.wet.value = 0; // start dry
+
+    // Flanger for modulation effects
+    this.flanger = new Tone.FeedbackDelay("8n", 0.2); // Using FeedbackDelay as Flanger substitute
+    this.flanger.wet.value = 0; // start dry
+
+    // Chain master effects: bus -> filter -> bitcrusher -> flanger -> compressor -> limiter -> destination
+    this.masterBus.chain(
+      this.masterFilter,
+      this.bitcrusher,
+      this.flanger,
+      this.masterCompressor,
+      this.masterLimiter,
+      Tone.Destination
+    );
 
     // Analysers for visualization
     this.fftAnalyser = new Tone.Analyser("fft", 2048);
