@@ -231,6 +231,19 @@ class ElectronicMusicEngine {
     this.flanger = new Tone.FeedbackDelay("8n", 0.2); // Using FeedbackDelay as Flanger substitute
     this.flanger.wet.value = 0; // start dry
 
+    // Envelope follower for auto-wah effects
+    this.envelopeFollower = new Tone.Follower(0.1, 400);
+    this.autoFilter = new Tone.Filter(800, "lowpass");
+    this.autoFilter.Q.value = 2;
+    this.envelopeFollower.connect(this.autoFilter.frequency);
+    this.autoFilterDepth = 1000; // How much the filter moves
+
+    // LFO for wobble
+    this.lfo = new Tone.LFO("4n", 400, 2000);
+    this.lfoFilter = new Tone.Filter(1000, "lowpass");
+    this.lfo.connect(this.lfoFilter.frequency);
+    this.lfo.start();
+
     // Chain master effects: bus -> filter -> bitcrusher -> flanger -> compressor -> limiter -> destination
     this.masterBus.chain(
       this.masterFilter,
