@@ -1506,6 +1506,7 @@ const settingsBtn = document.getElementById("settingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const closeSettings = document.getElementById("closeSettings");
 const languageSelect = document.getElementById("languageSelect");
+const startLangSelect = document.getElementById("startLangSelect");
 
 const translations = {
   "zh-TW": {
@@ -1579,18 +1580,28 @@ if (settingsModal) {
     if (e.target === settingsModal) settingsModal.classList.add("hidden");
   });
 }
+function setLanguage(lang) {
+  document.documentElement.lang = lang;
+  localStorage.setItem("gestureSynthLanguage", lang);
+  applyTranslations(lang);
+  if (languageSelect) languageSelect.value = lang;
+  if (startLangSelect) startLangSelect.value = lang;
+}
+
 if (languageSelect) {
   languageSelect.addEventListener("change", () => {
-    const selectedLang = languageSelect.value;
-    document.documentElement.lang = selectedLang;
-    localStorage.setItem("gestureSynthLanguage", selectedLang);
-    applyTranslations(selectedLang);
+    setLanguage(languageSelect.value);
   });
+}
+if (startLangSelect) {
+  startLangSelect.addEventListener("change", () => {
+    setLanguage(startLangSelect.value);
+  });
+}
+{
   const savedLang = localStorage.getItem("gestureSynthLanguage");
   const initialLang = savedLang || document.documentElement.lang || "zh-TW";
-  languageSelect.value = initialLang;
-  document.documentElement.lang = initialLang;
-  applyTranslations(initialLang);
+  setLanguage(initialLang);
 }
 
 patternSelect.addEventListener("change", () => {
