@@ -352,6 +352,16 @@ class ElectronicMusicEngine {
     this.lfo.connect(this.lfoFilter.frequency);
     this.lfo.start();
 
+    // Chain master effects: bus -> filter -> bitcrusher -> flanger -> compressor -> limiter -> destination
+    this.masterBus.chain(
+      this.masterFilter,
+      this.bitcrusher,
+      this.flanger,
+      this.masterCompressor,
+      this.masterLimiter,
+      Tone.Destination
+    );
+
     // ── Sequencer ──
     this.setupSequencer();
 
