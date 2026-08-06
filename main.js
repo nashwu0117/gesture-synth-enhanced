@@ -173,7 +173,7 @@ let arpDirection = 1;
 let arpPart = null;
 
 // Gesture stabilizers
-const CHORD_HOLD_TIME_MS = 100;
+const CHORD_HOLD_TIME_MS = 300;
 const VIBE_NULL_WINDOW_MS = 50;
 let stableChordState = null;
 let candidateChordState = null;
@@ -1686,7 +1686,7 @@ let hasCenterHUDMoved = false;
 let dragState = { active: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 };
 let panelDragState = { active: false, startY: 0, startHeight: 0, moved: false };
 let lastDetectionTimestamp = 0;
-const DETECTION_INTERVAL_MS = 100;
+const DETECTION_INTERVAL_MS = 200;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
