@@ -173,7 +173,7 @@ let arpDirection = 1;
 let arpPart = null;
 
 // Gesture stabilizers
-const CHORD_HOLD_TIME_MS = 100;
+const CHORD_HOLD_TIME_MS = 300;
 const VIBE_NULL_WINDOW_MS = 50;
 let stableChordState = null;
 let candidateChordState = null;
@@ -197,14 +197,62 @@ class ElectronicMusicEngine {
 
   async init() {
     await Tone.start();
+    console.log('Tone.js initialized, audio context state:', Tone.context.state);
+    // Ensure audio context is not suspended
+    if (Tone.context.state === 'suspended') {
+      await Tone.context.resume();
+      console.log('Audio context resumed');
+    }
     Tone.Transport.bpm.value = 128;
+    // Test tone to verify audio works
+    try {
+      const test = new Tone.Synth().toDestination();
+      test.triggerAttackRelease('C4', '0.1');
+      test.dispose();
+      console.log('Test tone played');
+    } catch (e) {
+      console.error('Test tone failed:', e);
+    }
 
     // ── Master Chain ──
     this.masterCompressor = new Tone.Compressor(-24, 4);
     this.masterLimiter = new Tone.Limiter(-1);
     this.masterBus = new Tone.Gain(0.85);
 
-    this.masterBus.chain(this.masterCompressor, this.masterLimiter, Tone.Destination);
+    // Master effects
+    this.masterFilter = new Tone.Filter(2000, "lowpass");
+    this.masterFilter.Q.value = 1;
+
+    // Bitcrusher for lo-fi distortion
+    this.bitcrusher = new Tone.BitCrusher(4, 4); // bits, normfreq
+    this.bitcrusher.wet.value = 0; // start dry
+
+    // Flanger for modulation effects
+    this.flanger = new Tone.FeedbackDelay("8n", 0.2); // Using FeedbackDelay as Flanger substitute
+    this.flanger.wet.value = 0; // start dry
+
+    // Envelope follower for auto-wah effects
+    this.envelopeFollower = new Tone.Follower(0.1, 400);
+    this.autoFilter = new Tone.Filter(800, "lowpass");
+    this.autoFilter.Q.value = 2;
+    this.envelopeFollower.connect(this.autoFilter.frequency);
+    this.autoFilterDepth = 1000; // How much the filter moves
+
+    // LFO for wobble
+    this.lfo = new Tone.LFO("4n", 400, 2000);
+    this.lfoFilter = new Tone.Filter(1000, "lowpass");
+    this.lfo.connect(this.lfoFilter.frequency);
+    this.lfo.start();
+
+    // Chain master effects: bus -> filter -> bitcrusher -> flanger -> compressor -> limiter -> destination
+    this.masterBus.chain(
+      this.masterFilter,
+      this.bitcrusher,
+      this.flanger,
+      this.masterCompressor,
+      this.masterLimiter,
+      Tone.Destination
+    );
 
     // Analysers for visualization
     this.fftAnalyser = new Tone.Analyser("fft", 2048);
@@ -220,13 +268,12 @@ class ElectronicMusicEngine {
     });
     this.leadDistortion = new Tone.Distortion(0.15);
     // New effects for expressive control
-    this.leadBitcrusher = new Tone.BitDepth(24); // clean by default
+    this.leadBitcrusher = new Tone.BitCrusher(4, 4); // bits, normalfrequency
     this.leadWaveshaper = new Tone.WaveShaper();
     // Set a subtle curve for warmth (almost linear)
     this.leadWaveshaper.curve = new Float32Array([-0.99, -0.5, 0, 0.5, 0.99]);
     this.leadWaveshaper.oversample = '4x';
-    this.leadFlanger = new Tone.Flanger();
-    this.leadFlanger.depth.value = 0; // no effect by default
+    this.leadFlanger = null; // Flanger not available in this Tone.js version
     this.leadPhaser = new Tone.Phaser();
     this.leadPhaser.frequency.value = 0; // no modulation by default
     this.leadTremolo = new Tone.Tremolo();
@@ -235,12 +282,11 @@ class ElectronicMusicEngine {
     this.leadDelay = new Tone.FeedbackDelay("8n", 0.35);
     this.leadReverb = new Tone.Reverb({ decay: 2.5, wet: 0.25, preDelay: 0.01 });
     this.leadPanner = new Tone.Panner(0);
-    // Chain: distortion -> bitcrusher -> waveshaper -> flanger -> phaser -> tremolo -> filter -> delay -> reverb -> panner -> master
+    // Chain: distortion -> bitcrusher -> waveshaper -> phaser -> tremolo -> filter -> delay -> reverb -> panner -> master
     this.leadSynth.chain(
       this.leadDistortion,
       this.leadBitcrusher,
       this.leadWaveshaper,
-      this.leadFlanger,
       this.leadPhaser,
       this.leadTremolo,
       this.leadFilter,
@@ -309,38 +355,6 @@ class ElectronicMusicEngine {
     this.hihat.connect(this.masterBus);
     this.clap.connect(this.masterBus);
 
-    // ── Master Effects ──
-    this.masterFilter = new Tone.Filter(2000, "lowpass");
-    this.masterFilter.Q.value = 1;
-
-    // Bitcrusher for lo-fi distortion
-    this.bitcrusher = new Tone.BitCrusher(4, 4); // bits, normfreq
-    this.bitcrusher.wet.value = 0; // start dry
-
-    // Flanger for modulation effects
-    this.flanger = new Tone.FeedbackEffect({
-      effect: new Tone.Flanger({
-        delayDelay: 0.5,
-        depth: 0.5,
-        feedback: 0.2,
-        rate: 0.5
-      }),
-      feedback: 0.2
-    });
-    this.flanger.wet.value = 0; // start dry
-
-    // Envelope follower for auto-wah effects
-    this.envelopeFollower = new Tone.Follower(0.1, 400);
-    this.autoFilter = new Tone.Filter(800, "lowpass");
-    this.autoFilter.Q.value = 2;
-    this.envelopeFollower.connect(this.autoFilter.frequency);
-    this.autoFilterDepth = 1000; // How much the filter moves
-
-    // LFO for wobble
-    this.lfo = new Tone.LFO("4n", 400, 2000);
-    this.lfoFilter = new Tone.Filter(1000, "lowpass");
-    this.lfo.connect(this.lfoFilter.frequency);
-    this.lfo.start();
 
     // ── Sequencer ──
     this.setupSequencer();
@@ -571,10 +585,9 @@ class ElectronicMusicEngine {
   }
 
   updateFlanger(amount) {
-    // Map 0-100 to flanger depth (0-1)
-    const depth = amount / 100;
-    this.leadFlanger.depth.value = depth;
-    this.flanger.effect.depth = depth;
+    // Map 0-100 to feedback delay parameters
+    const feedback = amount / 100; // 0 to 1
+    this.flanger.feedback.value = feedback;
   }
 
   updateAutoFilter(amount) {
@@ -1493,6 +1506,7 @@ const settingsBtn = document.getElementById("settingsBtn");
 const settingsModal = document.getElementById("settingsModal");
 const closeSettings = document.getElementById("closeSettings");
 const languageSelect = document.getElementById("languageSelect");
+const startLangSelect = document.getElementById("startLangSelect");
 
 const translations = {
   "zh-TW": {
@@ -1566,18 +1580,28 @@ if (settingsModal) {
     if (e.target === settingsModal) settingsModal.classList.add("hidden");
   });
 }
+function setLanguage(lang) {
+  document.documentElement.lang = lang;
+  localStorage.setItem("gestureSynthLanguage", lang);
+  applyTranslations(lang);
+  if (languageSelect) languageSelect.value = lang;
+  if (startLangSelect) startLangSelect.value = lang;
+}
+
 if (languageSelect) {
   languageSelect.addEventListener("change", () => {
-    const selectedLang = languageSelect.value;
-    document.documentElement.lang = selectedLang;
-    localStorage.setItem("gestureSynthLanguage", selectedLang);
-    applyTranslations(selectedLang);
+    setLanguage(languageSelect.value);
   });
+}
+if (startLangSelect) {
+  startLangSelect.addEventListener("change", () => {
+    setLanguage(startLangSelect.value);
+  });
+}
+{
   const savedLang = localStorage.getItem("gestureSynthLanguage");
   const initialLang = savedLang || document.documentElement.lang || "zh-TW";
-  languageSelect.value = initialLang;
-  document.documentElement.lang = initialLang;
-  applyTranslations(initialLang);
+  setLanguage(initialLang);
 }
 
 patternSelect.addEventListener("change", () => {
@@ -1697,7 +1721,7 @@ let hasCenterHUDMoved = false;
 let dragState = { active: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 };
 let panelDragState = { active: false, startY: 0, startHeight: 0, moved: false };
 let lastDetectionTimestamp = 0;
-const DETECTION_INTERVAL_MS = 100;
+const DETECTION_INTERVAL_MS = 200;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -2036,7 +2060,7 @@ async function main() {
           engine.updateFlanger(rawFingerSpread);    // Finger spread -> flanger depth
           engine.updateAutoFilter(rawWristRotation); // Wrist rotation -> auto filter amount
 
-          if (currentChord && qualityIndex >= 1) {
+          if (currentChord) {
             const tones = getChordTones(currentChord, isMajorMode);
             let notes = getSolidNotes(tones, qualityIndex, isMajorMode);
             if (thumbDown) notes = notes.map(f => f / 2);
@@ -2063,6 +2087,16 @@ async function main() {
                 thumbDown
               });
             }
+          } else if (cachedRightLandmarks) {
+            // Fallback: play root note if no chord detected but right hand is present
+            const rootNote = Tone.Frequency(currentTonicFreq).toNote();
+            const notes = [rootNote];
+            if (!isArpOn) {
+              engine.playLeadNotes(notes, currentVolume * 0.5); // quieter fallback
+            }
+            engine.playPadNotes(notes, currentVolume * 0.3);
+            engine.playBassNote(rootNote, currentVolume * 0.5);
+            engine.setArpNotes(notes);
           } else {
             engine.stopLead();
             engine.stopBass();

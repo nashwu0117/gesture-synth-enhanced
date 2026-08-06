@@ -79,6 +79,31 @@
       color: #fff;
       box-shadow: 0 0 30px rgba(255,0,110,0.4);
     }
+    #startOverlay .lang-selector {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #startOverlay .lang-selector label {
+      color: #888;
+      font-size: 0.9rem;
+    }
+    #startOverlay .lang-selector select {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      outline: none;
+    }
+    #startOverlay .lang-selector select:focus {
+      border-color: #ff006e;
+    }
 
     /* ===== Top Control Bar ===== */
     #topBar {
@@ -796,6 +821,7 @@
     }
   </style>
 <base target="_blank">
+  <script type="module" src="/main.js"></script>
 </head>
 <body>
 
@@ -803,6 +829,13 @@
   <canvas id="overlay"></canvas>
 
   <div id="startOverlay">
+    <div class="lang-selector">
+      <label id="startLangLabel" data-i18n="languageLabel">語言</label>
+      <select id="startLangSelect">
+        <option value="zh-TW">中文（繁體）</option>
+        <option value="en-US">English</option>
+      </select>
+    </div>
     <h1 data-i18n="startHeader">GESTURE SYNTH</h1>
     <p id="startSubtext" data-i18n="startSubtext">EDM Edition — 手勢控制電音合成器</p>
     <button class="start-btn" id="startBtn" data-i18n="startButton">點擊開始</button>
@@ -1143,6 +1176,5 @@
     </div>
   </div>
 
-  <script type="module" src="main.js"></script>
 </body>
 </html>
