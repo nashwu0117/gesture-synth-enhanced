@@ -32,9 +32,11 @@ jobs:
             echo "status=broken" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Auto-repair (rebuild and redeploy)
+      - name: Checkout source
         if: steps.health-check.outputs.status == 'broken'
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node
         if: steps.health-check.outputs.status == 'broken'
@@ -54,13 +56,17 @@ jobs:
       - name: Republish to gh-pages branch
         if: steps.health-check.outputs.status == 'broken'
         run: |
+          set -e
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch --depth=1 origin gh-pages:gh-pages || git checkout --orphan gh-pages
-          git checkout gh-pages
-          git rm -rf --ignore-unmatch assets index.html
-          cp -r dist/index.html dist/assets .
-          git add -f index.html assets
+          git fetch --depth=1 origin gh-pages:gh-pages
+          git worktree add /tmp/gh-pages-site gh-pages
+          cd /tmp/gh-pages-site
+          git rm -rf --ignore-unmatch . >/dev/null 2>&1 || true
+          rm -rf -- ./* ./.[!.]* 2>/dev/null || true
+          cp -r $GITHUB_WORKSPACE/dist/index.html .
+          cp -r $GITHUB_WORKSPACE/dist/assets .
+          git add -A
           git commit -m "Auto-repair: redeploy after failed health check" || echo "No changes to commit"
           git push origin gh-pages
           echo "Repair deployed."
