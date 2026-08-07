@@ -1,0 +1,66 @@
+name: Health Check & Auto-Repair
+
+on:
+  schedule:
+    # 每 10 分鐘檢查一次
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check page and assets status
+        id: check
+        run: |
+          BASE="https://nashwu0117.github.io/gesture-synth-enhanced"
+          PAGE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/")
+          JS_REF=$(curl -s "$BASE/" | grep -o 'assets/[a-zA-Z0-9._-]*\.js' | head -1)
+          echo "JS ref: $JS_REF"
+          if [ -z "$JS_REF" ]; then
+            echo "status=broken" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          JS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/$JS_REF")
+          echo "page=$PAGE_CODE js=$JS_CODE"
+          if [ "$PAGE_CODE" = "200" ] && [ "$JS_CODE" = "200" ]; then
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=broken" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Auto-repair (rebuild and redeploy)
+        if: steps.health-check.outputs.status == 'broken'
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: steps.health-check.outputs.status == 'broken'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.health-check.outputs.status == 'broken'
+        run: npm ci
+
+      - name: Build
+        if: steps.health-check.outputs.status == 'broken'
+        run: npm run build
+
+      - name: Republish to gh-pages branch
+        if: steps.health-check.outputs.status == 'broken'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --depth=1 origin gh-pages:gh-pages || git checkout --orphan gh-pages
+          git checkout gh-pages
+          git rm -rf --ignore-unmatch assets index.html
+          cp -r dist/index.html dist/assets .
+          git add -f index.html assets
+          git commit -m "Auto-repair: redeploy after failed health check" || echo "No changes to commit"
+          git push origin gh-pages
+          echo "Repair deployed."
