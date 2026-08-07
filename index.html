@@ -79,31 +79,6 @@
       color: #fff;
       box-shadow: 0 0 30px rgba(255,0,110,0.4);
     }
-    #startOverlay .lang-selector {
-      position: absolute;
-      top: 24px;
-      right: 24px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    #startOverlay .lang-selector label {
-      color: #888;
-      font-size: 0.9rem;
-    }
-    #startOverlay .lang-selector select {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.25);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      outline: none;
-    }
-    #startOverlay .lang-selector select:focus {
-      border-color: #ff006e;
-    }
 
     /* ===== Top Control Bar ===== */
     #topBar {
@@ -821,7 +796,7 @@
     }
   </style>
 <base target="_blank">
-  <script type="module" crossorigin src="./assets/index-CaIUD-rY.js"></script>
+  <script type="module" crossorigin src="/assets/index-DMvTpXmR.js"></script>
 </head>
 <body>
 
@@ -829,13 +804,6 @@
   <canvas id="overlay"></canvas>
 
   <div id="startOverlay">
-    <div class="lang-selector">
-      <label id="startLangLabel" data-i18n="languageLabel">語言</label>
-      <select id="startLangSelect">
-        <option value="zh-TW">中文（繁體）</option>
-        <option value="en-US">English</option>
-      </select>
-    </div>
     <h1 data-i18n="startHeader">GESTURE SYNTH</h1>
     <p id="startSubtext" data-i18n="startSubtext">EDM Edition — 手勢控制電音合成器</p>
     <button class="start-btn" id="startBtn" data-i18n="startButton">點擊開始</button>
@@ -1061,42 +1029,6 @@
             <label>Rat</label>
             <input type="range" id="compRatio" min="1" max="20" value="4" step="0.5">
             <span class="val" id="compRatioVal">4.0</span>
-          </div>
-        </div>
-
-        <!-- New Effect Slots -->
-        <div class="effect-slot">
-          <h4><span class="dot on"></span> BitCrush</h4>
-          <div class="knob-row">
-            <label>Bits</label>
-            <input type="range" id="bitcrusherAmt" min="0" max="100" value="0">
-            <span class="val" id="bitcrusherVal">0</span>
-          </div>
-          <div class="knob-row">
-            <label>Mix</label>
-            <input type="range" id="bitcrusherMix" min="0" max="100" value="0">
-            <span class="val" id="bitcrusherMixVal">0</span>
-          </div>
-        </div>
-        <div class="effect-slot">
-          <h4><span class="dot on"></span> Flanger</h4>
-          <div class="knob-row">
-            <label>Depth</label>
-            <input type="range" id="flangerAmt" min="0" max="100" value="0">
-            <span class="val" id="flangerVal">0</span>
-          </div>
-          <div class="knob-row">
-            <label>Feedback</label>
-            <input type="range" id="flangerFeedback" min="0" max="100" value="0">
-            <span class="val" id="flangerFeedbackVal">0</span>
-          </div>
-        </div>
-        <div class="effect-slot">
-          <h4><span class="dot on"></span> AutoFilter</h4>
-          <div class="knob-row">
-            <label>Amount</label>
-            <input type="range" id="autoFilterAmt" min="0" max="100" value="0">
-            <span class="val" id="autoFilterVal">0</span>
           </div>
         </div>
       </div>
