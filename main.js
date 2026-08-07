@@ -166,6 +166,14 @@ let loopEvents = [];
 let loopPart = null;
 let loopLength = "2m"; // 2 measures
 
+// Video recording
+let mediaRecorder = null;
+let recordChunks = [];
+let recordStream = null;
+let recordAudioDest = null;
+let recordElapsedTimer = null;
+let recordStartTime = 0;
+
 // Arpeggiator
 let arpNotes = [];
 let arpIndex = 0;
@@ -1479,10 +1487,72 @@ playBtn.addEventListener("click", () => {
   playBtn.textContent = isPlaying ? "⏸" : "▶";
 });
 
+function startVideoRecording() {
+  if (!engine.initialized || !canvasEl) return;
+  recordChunks = [];
+  const videoStream = canvasEl.captureStream(30);
+  recordAudioDest = Tone.context.createMediaStreamDestination();
+  Tone.Destination.connect(recordAudioDest);
+  const tracks = [...videoStream.getVideoTracks(), ...recordAudioDest.stream.getAudioTracks()];
+  recordStream = new MediaStream(tracks);
+  mediaRecorder = new MediaRecorder(recordStream, { mimeType: "video/webm" });
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) recordChunks.push(e.data);
+  };
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    a.href = url;
+    a.download = `gesture-synth-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    recordStream.getTracks().forEach((t) => t.stop());
+    if (recordAudioDest) {
+      Tone.Destination.disconnect(recordAudioDest);
+      recordAudioDest = null;
+    }
+    recordStream = null;
+    mediaRecorder = null;
+  };
+  mediaRecorder.start();
+  recordStartTime = Date.now();
+  const statusEl = document.getElementById("audioStatus");
+  recordElapsedTimer = setInterval(() => {
+    const sec = Math.floor((Date.now() - recordStartTime) / 1000);
+    if (statusEl) statusEl.textContent = `錄影中 ${sec}s`;
+  }, 250);
+}
+
+function stopVideoRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+  if (recordElapsedTimer) {
+    clearInterval(recordElapsedTimer);
+    recordElapsedTimer = null;
+  }
+  const statusEl = document.getElementById("audioStatus");
+  if (statusEl) statusEl.textContent = "已儲存錄影";
+}
+
 recBtn.addEventListener("click", () => {
   if (!engine.initialized) return;
-  isRecording = !isRecording;
-  recBtn.classList.toggle("recording", isRecording);
+  if (!isRecording) {
+    isRecording = true;
+    recBtn.classList.add("recording");
+    recBtn.textContent = "⬛";
+    startVideoRecording();
+  } else {
+    isRecording = false;
+    recBtn.classList.remove("recording");
+    recBtn.textContent = "●";
+    stopVideoRecording();
+  }
 });
 
 clearBtn.addEventListener("click", () => {
@@ -1518,7 +1588,7 @@ const translations = {
     topBpm: "BPM",
     topPreset: "Preset",
     playBtnTitle: "播放 / 暫停",
-    recBtnTitle: "錄製循環",
+    recBtnTitle: "錄影 (WebM)",
     clearBtnTitle: "清除循環",
     settingsBtnTitle: "設定",
     helpBtnTitle: "說明",
@@ -1539,7 +1609,7 @@ const translations = {
     topBpm: "BPM",
     topPreset: "Preset",
     playBtnTitle: "Play / Pause",
-    recBtnTitle: "Record Loop",
+    recBtnTitle: "Record Video (WebM)",
     clearBtnTitle: "Clear Loop",
     settingsBtnTitle: "Settings",
     helpBtnTitle: "Help",
@@ -1806,6 +1876,12 @@ function startPanelDrag(event) {
   event.stopPropagation();
 }
 
+function updateSpectrumPosition() {
+  if (!spectrumCanvas) return;
+  const panelHeight = bottomPanel ? bottomPanel.offsetHeight : 0;
+  spectrumCanvas.style.bottom = `${Math.max(60, panelHeight + 12)}px`;
+}
+
 function movePanelDrag(event) {
   if (!panelDragState.active || !bottomPanel) return;
   const clientY = event.clientY !== undefined ? event.clientY : event.touches?.[0]?.clientY;
@@ -1813,14 +1889,15 @@ function movePanelDrag(event) {
   const deltaY = clientY - panelDragState.startY;
   if (Math.abs(deltaY) > 6) panelDragState.moved = true;
   const maxHeight = Math.max(360, window.innerHeight - 80);
-  const targetHeight = clamp(panelDragState.startHeight - deltaY, 40, maxHeight);
+  const targetHeight = clamp(panelDragState.startHeight - deltaY, PANEL_MIN_HEIGHT, maxHeight);
   bottomPanel.style.maxHeight = `${targetHeight}px`;
-  const shouldCollapse = targetHeight <= 40;
+  const shouldCollapse = targetHeight <= PANEL_MIN_HEIGHT;
   bottomPanel.classList.toggle("collapsed", shouldCollapse);
   spectrumCanvas.classList.toggle("panel-collapsed", shouldCollapse);
   gestureStatus.classList.toggle("panel-collapsed", shouldCollapse);
   helpButton.classList.toggle("panel-collapsed", shouldCollapse);
   panelLabel.textContent = shouldCollapse ? "展開面板" : "收起面板";
+  updateSpectrumPosition();
   event.preventDefault();
 }
 
@@ -1907,12 +1984,13 @@ function applyPanelCollapseState(setHeight = true) {
   // Only set height if not currently dragging (to avoid overriding user's drag position)
   if (setHeight && !panelDragState.active) {
     if (isPanelCollapsed) {
-      bottomPanel.style.maxHeight = "40px"; // Match the collapse threshold used during drag
+      bottomPanel.style.maxHeight = `${PANEL_MIN_HEIGHT}px`; // Match the collapse threshold used during drag
     } else {
       bottomPanel.style.maxHeight = "";
     }
   }
   panelLabel.textContent = isPanelCollapsed ? "展開面板" : "收起面板";
+  updateSpectrumPosition();
 }
 
 applyPanelCollapseState();
