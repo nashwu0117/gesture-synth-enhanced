@@ -63,7 +63,8 @@ jobs:
           git worktree add /tmp/gh-pages-site gh-pages
           cd /tmp/gh-pages-site
           git rm -rf --ignore-unmatch . >/dev/null 2>&1 || true
-          rm -rf -- ./* ./.[!.]* 2>/dev/null || true
+          # 清除工作區檔案（保留 .git 指標，否則 git 無法運作）
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf -- {} +
           cp -r $GITHUB_WORKSPACE/dist/index.html .
           cp -r $GITHUB_WORKSPACE/dist/assets .
           git add -A
