@@ -43,6 +43,6 @@ jobs:
           cp -r /home/runner/work/gesture-synth-enhanced/gesture-synth-enhanced/dist/assets .
           git add -A
           git commit -m "Deploy: automated build from main ${{ github.sha }}" || echo "No changes to commit"
-          git push origin gh-pages
+          git push origin gh-pages || echo "Push skipped (up to date)"
           cd /home/runner/work/gesture-synth-enhanced/gesture-synth-enhanced
-          git worktree remove --force gh-pages
+          git worktree remove --force /tmp/gh-pages-site || true
