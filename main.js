@@ -1878,8 +1878,17 @@ function startPanelDrag(event) {
 
 function updateSpectrumPosition() {
   if (!spectrumCanvas) return;
-  const panelHeight = bottomPanel ? bottomPanel.offsetHeight : 0;
-  spectrumCanvas.style.bottom = `${Math.max(60, panelHeight + 12)}px`;
+  const panelTop = bottomPanel ? bottomPanel.getBoundingClientRect().top : window.innerHeight;
+  spectrumCanvas.style.bottom = `${Math.max(60, window.innerHeight - panelTop + 8)}px`;
+}
+
+function syncHudPositions() {
+  if (!spectrumCanvas || !bottomPanel) return;
+  const panelTop = bottomPanel.getBoundingClientRect().top;
+  const bottomOffset = Math.max(60, window.innerHeight - panelTop + 8);
+  spectrumCanvas.style.bottom = `${bottomOffset}px`;
+  if (gestureStatus) gestureStatus.style.bottom = `${bottomOffset}px`;
+  if (helpButton) helpButton.style.bottom = `${Math.max(16, bottomOffset - 16)}px`;
 }
 
 function movePanelDrag(event) {
@@ -1897,7 +1906,7 @@ function movePanelDrag(event) {
   gestureStatus.classList.toggle("panel-collapsed", shouldCollapse);
   helpButton.classList.toggle("panel-collapsed", shouldCollapse);
   panelLabel.textContent = shouldCollapse ? "展開面板" : "收起面板";
-  updateSpectrumPosition();
+  syncHudPositions();
   event.preventDefault();
 }
 
@@ -1990,7 +1999,7 @@ function applyPanelCollapseState(setHeight = true) {
     }
   }
   panelLabel.textContent = isPanelCollapsed ? "展開面板" : "收起面板";
-  updateSpectrumPosition();
+  syncHudPositions();
 }
 
 applyPanelCollapseState();
@@ -2209,6 +2218,9 @@ async function main() {
 
       // ── 8. Spectrum Visualizer ──
       drawSpectrum();
+
+      // ── 9. Keep floating HUD above the panel ──
+      syncHudPositions();
     } catch (err) {
       console.error("Main loop failure:", err);
     } finally {
